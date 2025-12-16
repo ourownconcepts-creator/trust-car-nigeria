@@ -98,7 +98,7 @@ const Admin = () => {
         {/* Admin Sidebar */}
         <aside className="fixed left-0 top-0 h-full w-64 bg-primary text-primary-foreground p-6 hidden lg:block">
           <div className="mb-8">
-            <Logo variant="light" size="md" />
+            <Logo size="md" />
           </div>
 
           <nav className="space-y-2">
