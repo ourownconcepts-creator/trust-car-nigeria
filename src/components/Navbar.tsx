@@ -11,8 +11,8 @@ const Navbar = () => {
   const navLinks = [
     { label: "Browse Cars", href: "/browse" },
     { label: "Sell Your Car", href: "/sell" },
-    { label: "Dealers", href: "/dealers" },
-    { label: "How It Works", href: "/how-it-works" },
+    { label: "About", href: "/about" },
+    { label: "Contact", href: "/contact" },
   ];
 
   return (
@@ -39,16 +39,22 @@ const Navbar = () => {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex lg:items-center lg:gap-3">
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
-              <Search size={20} />
-            </Button>
-            <Button variant="outline" size="default">
-              <User size={18} />
-              Sign In
-            </Button>
-            <Button variant="default" size="default">
-              List Your Car
-            </Button>
+            <Link to="/browse">
+              <Button variant="ghost" size="icon" className="text-muted-foreground">
+                <Search size={20} />
+              </Button>
+            </Link>
+            <Link to="/auth">
+              <Button variant="outline" size="default">
+                <User size={18} />
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/sell">
+              <Button variant="default" size="default">
+                List Your Car
+              </Button>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -82,13 +88,17 @@ const Navbar = () => {
                   </Link>
                 ))}
                 <div className="mt-4 flex flex-col gap-2 pt-4 border-t border-border">
-                  <Button variant="outline" className="w-full justify-center">
-                    <User size={18} />
-                    Sign In
-                  </Button>
-                  <Button variant="default" className="w-full justify-center">
-                    List Your Car
-                  </Button>
+                  <Link to="/auth" onClick={() => setIsOpen(false)}>
+                    <Button variant="outline" className="w-full justify-center">
+                      <User size={18} />
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link to="/sell" onClick={() => setIsOpen(false)}>
+                    <Button variant="default" className="w-full justify-center">
+                      List Your Car
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </motion.div>
