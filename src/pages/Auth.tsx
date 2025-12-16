@@ -1,21 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, Phone, Eye, EyeOff, Building2, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, Phone, Eye, EyeOff, Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Logo from "@/components/Logo";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { z } from "zod";
 
 type AuthMode = "login" | "signup";
 type UserType = "buyer" | "seller" | "dealer";
 
+const emailSchema = z.string().email("Please enter a valid email address");
+const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
+
 const Auth = () => {
+  const navigate = useNavigate();
+  const { user, signIn, signUp, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<AuthMode>("login");
   const [userType, setUserType] = useState<UserType>("buyer");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -24,11 +33,89 @@ const Auth = () => {
     businessName: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate("/dashboard");
+    }
+  }, [user, authLoading, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement authentication
-    console.log("Auth submit:", { mode, userType, formData });
+    
+    try {
+      emailSchema.parse(formData.email);
+      passwordSchema.parse(formData.password);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+
+    setLoading(true);
+    const { error } = await signIn(formData.email, formData.password);
+    setLoading(false);
+
+    if (error) {
+      if (error.message.includes("Invalid login credentials")) {
+        toast.error("Invalid email or password. Please try again.");
+      } else if (error.message.includes("Email not confirmed")) {
+        toast.error("Please confirm your email before logging in.");
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success("Welcome back!");
+      navigate("/dashboard");
+    }
   };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      emailSchema.parse(formData.email);
+      passwordSchema.parse(formData.password);
+      if (!formData.fullName.trim()) {
+        toast.error("Please enter your full name");
+        return;
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+
+    setLoading(true);
+    const { error } = await signUp(formData.email, formData.password, {
+      full_name: formData.fullName,
+      phone: formData.phone,
+      user_type: userType,
+      business_name: userType === "dealer" ? formData.businessName : undefined,
+    });
+    setLoading(false);
+
+    if (error) {
+      if (error.message.includes("User already registered")) {
+        toast.error("An account with this email already exists. Please login instead.");
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success("Account created successfully!");
+      navigate("/dashboard");
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -95,7 +182,7 @@ const Auth = () => {
                 </TabsList>
 
                 <TabsContent value="login">
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleLogin} className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
                       <div className="relative">
@@ -107,6 +194,7 @@ const Auth = () => {
                           className="pl-10"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          disabled={loading}
                         />
                       </div>
                     </div>
@@ -122,6 +210,7 @@ const Auth = () => {
                           className="pl-10 pr-10"
                           value={formData.password}
                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          disabled={loading}
                         />
                         <button
                           type="button"
@@ -141,14 +230,18 @@ const Auth = () => {
                       <a href="#" className="text-primary hover:underline">Forgot password?</a>
                     </div>
 
-                    <Button type="submit" className="w-full" size="lg">
-                      Login <ArrowRight className="ml-2 h-4 w-4" />
+                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>Login <ArrowRight className="ml-2 h-4 w-4" /></>
+                      )}
                     </Button>
                   </form>
                 </TabsContent>
 
                 <TabsContent value="signup">
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSignup} className="space-y-4">
                     {/* User Type Selection */}
                     <div className="space-y-2">
                       <Label>I want to</Label>
@@ -167,6 +260,7 @@ const Auth = () => {
                                 ? "border-primary bg-primary/5"
                                 : "border-border hover:border-primary/50"
                             }`}
+                            disabled={loading}
                           >
                             <Icon className={`h-5 w-5 mx-auto mb-1 ${userType === value ? "text-primary" : "text-muted-foreground"}`} />
                             <span className="text-xs font-medium">{label}</span>
@@ -185,6 +279,7 @@ const Auth = () => {
                           className="pl-10"
                           value={formData.fullName}
                           onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                          disabled={loading}
                         />
                       </div>
                     </div>
@@ -200,6 +295,7 @@ const Auth = () => {
                             className="pl-10"
                             value={formData.businessName}
                             onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                            disabled={loading}
                           />
                         </div>
                       </div>
@@ -216,6 +312,7 @@ const Auth = () => {
                           className="pl-10"
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          disabled={loading}
                         />
                       </div>
                     </div>
@@ -231,6 +328,7 @@ const Auth = () => {
                           className="pl-10"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          disabled={loading}
                         />
                       </div>
                     </div>
@@ -246,6 +344,7 @@ const Auth = () => {
                           className="pl-10 pr-10"
                           value={formData.password}
                           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          disabled={loading}
                         />
                         <button
                           type="button"
@@ -264,8 +363,12 @@ const Auth = () => {
                       </span>
                     </div>
 
-                    <Button type="submit" className="w-full" size="lg">
-                      Create Account <ArrowRight className="ml-2 h-4 w-4" />
+                    <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                      {loading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>Create Account <ArrowRight className="ml-2 h-4 w-4" /></>
+                      )}
                     </Button>
                   </form>
                 </TabsContent>

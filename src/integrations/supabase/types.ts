@@ -14,16 +14,219 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      car_listings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          body_type: string | null
+          color: string | null
+          condition: string | null
+          created_at: string | null
+          description: string | null
+          featured: boolean | null
+          fuel_type: string | null
+          id: string
+          images: string[] | null
+          location: string
+          make: string
+          mileage: number | null
+          model: string
+          price: number
+          rejection_reason: string | null
+          status: Database["public"]["Enums"]["listing_status"] | null
+          title: string
+          transmission: string | null
+          updated_at: string | null
+          user_id: string
+          views_count: number | null
+          vin: string | null
+          year: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          body_type?: string | null
+          color?: string | null
+          condition?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          fuel_type?: string | null
+          id?: string
+          images?: string[] | null
+          location: string
+          make: string
+          mileage?: number | null
+          model: string
+          price: number
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          title: string
+          transmission?: string | null
+          updated_at?: string | null
+          user_id: string
+          views_count?: number | null
+          vin?: string | null
+          year: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          body_type?: string | null
+          color?: string | null
+          condition?: string | null
+          created_at?: string | null
+          description?: string | null
+          featured?: boolean | null
+          fuel_type?: string | null
+          id?: string
+          images?: string[] | null
+          location?: string
+          make?: string
+          mileage?: number | null
+          model?: string
+          price?: number
+          rejection_reason?: string | null
+          status?: Database["public"]["Enums"]["listing_status"] | null
+          title?: string
+          transmission?: string | null
+          updated_at?: string | null
+          user_id?: string
+          views_count?: number | null
+          vin?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          business_name: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_verified: boolean | null
+          phone_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          is_verified?: boolean | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          business_name?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_verified?: boolean | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verifications: {
+        Row: {
+          created_at: string | null
+          document_url: string | null
+          id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string | null
+          status: Database["public"]["Enums"]["verification_status"] | null
+          updated_at: string | null
+          user_id: string
+          verification_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_url?: string | null
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          status?: Database["public"]["Enums"]["verification_status"] | null
+          updated_at?: string | null
+          user_id: string
+          verification_type: string
+        }
+        Update: {
+          created_at?: string | null
+          document_url?: string | null
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          status?: Database["public"]["Enums"]["verification_status"] | null
+          updated_at?: string | null
+          user_id?: string
+          verification_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "buyer"
+        | "seller"
+        | "dealer"
+        | "support_admin"
+        | "verification_admin"
+        | "super_admin"
+      listing_status:
+        | "draft"
+        | "pending_approval"
+        | "active"
+        | "sold"
+        | "expired"
+        | "rejected"
+      verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +353,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "buyer",
+        "seller",
+        "dealer",
+        "support_admin",
+        "verification_admin",
+        "super_admin",
+      ],
+      listing_status: [
+        "draft",
+        "pending_approval",
+        "active",
+        "sold",
+        "expired",
+        "rejected",
+      ],
+      verification_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
