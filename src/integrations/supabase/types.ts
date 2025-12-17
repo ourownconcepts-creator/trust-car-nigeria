@@ -98,6 +98,63 @@ export type Database = {
         }
         Relationships: []
       }
+      fraud_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          listing_id: string | null
+          message: string
+          related_listing_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+          similarity_score: number | null
+          status: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          message: string
+          related_listing_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          similarity_score?: number | null
+          status?: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          message?: string
+          related_listing_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          similarity_score?: number | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_alerts_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "car_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fraud_alerts_related_listing_id_fkey"
+            columns: ["related_listing_id"]
+            isOneToOne: false
+            referencedRelation: "car_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

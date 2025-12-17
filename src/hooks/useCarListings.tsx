@@ -9,7 +9,7 @@ type CarListing = Database["public"]["Tables"]["car_listings"]["Row"];
 type CarListingInsert = Database["public"]["Tables"]["car_listings"]["Insert"];
 
 export const useCarListings = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { uploadMultipleImages, uploading } = useImageUpload();
   const [listings, setListings] = useState<CarListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +52,28 @@ export const useCarListings = () => {
     }
   };
 
+  const analyzeListingImages = async (listingId: string, imageUrls: string[]) => {
+    if (!session?.access_token || imageUrls.length === 0) return;
+
+    try {
+      console.log("Analyzing listing images for fraud detection...");
+      const { data, error } = await supabase.functions.invoke("analyze-listing-images", {
+        body: { listingId, imageUrls },
+      });
+
+      if (error) {
+        console.error("Error analyzing images:", error);
+        return;
+      }
+
+      if (data?.alertsCreated > 0) {
+        console.log(`Created ${data.alertsCreated} fraud alerts`);
+      }
+    } catch (error) {
+      console.error("Error calling analyze-listing-images:", error);
+    }
+  };
+
   const createListing = async (
     listingData: Omit<CarListingInsert, "user_id" | "id">,
     imageFiles: File[]
@@ -81,6 +103,12 @@ export const useCarListings = () => {
       if (error) throw error;
 
       toast.success("Listing submitted for review!");
+      
+      // Trigger fraud detection analysis in background
+      if (data && imageUrls.length > 0) {
+        analyzeListingImages(data.id, imageUrls);
+      }
+
       await fetchListings();
       return data;
     } catch (error: any) {
