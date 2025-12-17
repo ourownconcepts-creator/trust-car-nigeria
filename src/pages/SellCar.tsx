@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { 
   Upload, Car, FileText, Shield, CheckCircle2, ChevronRight, 
-  Camera, X, AlertCircle, Info
+  Camera, X, AlertCircle, Info, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useAuth } from "@/hooks/useAuth";
+import { useVerification } from "@/hooks/useVerification";
+import { useCarListings } from "@/hooks/useCarListings";
+import { toast } from "sonner";
 
 const steps = [
   { id: 1, title: "Car Details", icon: Car },
@@ -27,8 +33,31 @@ const fuelTypes = ["Petrol", "Diesel", "Hybrid", "Electric"];
 const conditions = ["Excellent", "Good", "Fair"];
 
 const SellCar = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { 
+    verification, 
+    isVerified, 
+    isPending, 
+    uploading: verificationUploading,
+    uploadDocument,
+    uploadSelfie,
+    submitVerification 
+  } = useVerification();
+  const { createListing, uploading: listingUploading } = useCarListings();
+
   const [currentStep, setCurrentStep] = useState(1);
-  const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
+  const [documentUrl, setDocumentUrl] = useState<string | null>(null);
+  const [selfieUrl, setSelfieUrl] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const documentInputRef = useRef<HTMLInputElement>(null);
+  const selfieInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     make: "",
     model: "",
@@ -46,13 +75,126 @@ const SellCar = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newImages = Array.from(files).map((file) => URL.createObjectURL(file));
-      setImages([...images, ...newImages].slice(0, 10));
+      const newFiles = Array.from(files);
+      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+      
+      setImageFiles([...imageFiles, ...newFiles].slice(0, 10));
+      setImagePreviews([...imagePreviews, ...newPreviews].slice(0, 10));
     }
   };
 
   const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+    URL.revokeObjectURL(imagePreviews[index]);
+    setImageFiles(imageFiles.filter((_, i) => i !== index));
+    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+  };
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDocumentFile(file);
+      const result = await uploadDocument(file);
+      if (result) {
+        setDocumentUrl(result.url);
+        toast.success("Document uploaded successfully");
+      }
+    }
+  };
+
+  const handleSelfieUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelfieFile(file);
+      const result = await uploadSelfie(file);
+      if (result) {
+        setSelfieUrl(result.url);
+        toast.success("Selfie uploaded successfully");
+      }
+    }
+  };
+
+  const handleVerificationSubmit = async () => {
+    if (!documentUrl || !selfieUrl) {
+      toast.error("Please upload both documents");
+      return;
+    }
+
+    const success = await submitVerification(documentUrl, selfieUrl);
+    if (success) {
+      setCurrentStep(4);
+    }
+  };
+
+  const validateStep = (step: number) => {
+    switch (step) {
+      case 1:
+        if (!formData.make || !formData.model || !formData.year || !formData.mileage ||
+            !formData.transmission || !formData.fuelType || !formData.condition ||
+            !formData.price || !formData.vin || !formData.location) {
+          toast.error("Please fill in all required fields");
+          return false;
+        }
+        if (formData.vin.length !== 17) {
+          toast.error("VIN must be exactly 17 characters");
+          return false;
+        }
+        return true;
+      case 2:
+        if (imageFiles.length < 1) {
+          toast.error("Please upload at least one photo");
+          return false;
+        }
+        return true;
+      case 3:
+        if (!isVerified && !isPending) {
+          toast.error("Please complete verification first");
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      if (currentStep === 3 && !isVerified && !isPending) {
+        handleVerificationSubmit();
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!user) return;
+
+    setSubmitting(true);
+    try {
+      const result = await createListing(
+        {
+          title: `${formData.make} ${formData.model} ${formData.year}`,
+          make: formData.make,
+          model: formData.model,
+          year: parseInt(formData.year),
+          mileage: parseInt(formData.mileage),
+          transmission: formData.transmission,
+          fuel_type: formData.fuelType,
+          condition: formData.condition,
+          price: parseFloat(formData.price),
+          vin: formData.vin,
+          description: formData.description,
+          location: formData.location,
+        },
+        imageFiles
+      );
+
+      if (result) {
+        navigate("/dashboard");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const renderStep = () => {
@@ -73,7 +215,7 @@ const SellCar = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {carMakes.map((make) => (
-                      <SelectItem key={make} value={make.toLowerCase()}>{make}</SelectItem>
+                      <SelectItem key={make} value={make}>{make}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -120,7 +262,7 @@ const SellCar = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {transmissions.map((t) => (
-                      <SelectItem key={t} value={t.toLowerCase()}>{t}</SelectItem>
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -134,7 +276,7 @@ const SellCar = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {fuelTypes.map((f) => (
-                      <SelectItem key={f} value={f.toLowerCase()}>{f}</SelectItem>
+                      <SelectItem key={f} value={f}>{f}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -148,7 +290,7 @@ const SellCar = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {conditions.map((c) => (
-                      <SelectItem key={c} value={c.toLowerCase()}>{c}</SelectItem>
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -175,7 +317,7 @@ const SellCar = () => {
               <Input
                 placeholder="Enter 17-character VIN"
                 value={formData.vin}
-                onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase() })}
                 maxLength={17}
               />
               <p className="text-xs text-muted-foreground">
@@ -229,9 +371,9 @@ const SellCar = () => {
               </label>
             </div>
 
-            {images.length > 0 && (
+            {imagePreviews.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                {images.map((img, index) => (
+                {imagePreviews.map((img, index) => (
                   <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
                     <img src={img} alt="" className="w-full h-full object-cover" />
                     <button
@@ -271,76 +413,135 @@ const SellCar = () => {
             animate={{ opacity: 1, x: 0 }}
             className="space-y-6"
           >
-            <div className="bg-verification/10 border border-verification/20 rounded-xl p-6">
-              <div className="flex items-start gap-4">
-                <Shield className="h-8 w-8 text-verification flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-lg mb-2">Seller Verification Required</h3>
-                  <p className="text-muted-foreground mb-4">
-                    To maintain trust on our platform, we require all sellers to verify their identity before listing.
-                  </p>
+            {isVerified ? (
+              <div className="bg-success/10 border border-success/20 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <CheckCircle2 className="h-8 w-8 text-success flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Already Verified!</h3>
+                    <p className="text-muted-foreground">
+                      Your account is verified. You can proceed to submit your listing.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <h4 className="font-medium">Required Documents</h4>
-              
-              <div className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
-                    </div>
+            ) : isPending ? (
+              <div className="bg-verification/10 border border-verification/20 rounded-xl p-6">
+                <div className="flex items-start gap-4">
+                  <Shield className="h-8 w-8 text-verification flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Verification Pending</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Your verification is under review. You can proceed to submit your listing, 
+                      and it will go live once your verification is approved.
+                    </p>
+                    <Badge variant="secondary">Under Review</Badge>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-verification/10 border border-verification/20 rounded-xl p-6">
+                  <div className="flex items-start gap-4">
+                    <Shield className="h-8 w-8 text-verification flex-shrink-0" />
                     <div>
-                      <p className="font-medium">Government-issued ID</p>
-                      <p className="text-sm text-muted-foreground">NIN, Driver's License, or International Passport</p>
+                      <h3 className="font-semibold text-lg mb-2">Seller Verification Required</h3>
+                      <p className="text-muted-foreground">
+                        To maintain trust on our platform, we require all sellers to verify their identity before listing.
+                      </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">Upload</Button>
                 </div>
-              </div>
 
-              <div className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                      <Camera className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Selfie Verification</p>
-                      <p className="text-sm text-muted-foreground">Take a photo holding your ID</p>
+                <div className="space-y-4">
+                  <h4 className="font-medium">Required Documents</h4>
+                  
+                  <input
+                    type="file"
+                    ref={documentInputRef}
+                    accept="image/*,.pdf"
+                    onChange={handleDocumentUpload}
+                    className="hidden"
+                  />
+                  <div 
+                    className={`border rounded-lg p-4 transition-colors cursor-pointer ${
+                      documentUrl ? "border-success bg-success/5" : "border-border hover:border-primary/50"
+                    }`}
+                    onClick={() => documentInputRef.current?.click()}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          documentUrl ? "bg-success/20" : "bg-muted"
+                        }`}>
+                          {documentUrl ? (
+                            <CheckCircle2 className="h-5 w-5 text-success" />
+                          ) : (
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">Government-issued ID</p>
+                          <p className="text-sm text-muted-foreground">
+                            {documentFile ? documentFile.name : "NIN, Driver's License, or International Passport"}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" disabled={verificationUploading}>
+                        {verificationUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Upload"}
+                      </Button>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">Capture</Button>
-                </div>
-              </div>
 
-              <div className="border border-border rounded-lg p-4 hover:border-primary/50 transition-colors cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                      <Car className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Proof of Ownership</p>
-                      <p className="text-sm text-muted-foreground">Vehicle registration or customs papers</p>
+                  <input
+                    type="file"
+                    ref={selfieInputRef}
+                    accept="image/*"
+                    onChange={handleSelfieUpload}
+                    className="hidden"
+                  />
+                  <div 
+                    className={`border rounded-lg p-4 transition-colors cursor-pointer ${
+                      selfieUrl ? "border-success bg-success/5" : "border-border hover:border-primary/50"
+                    }`}
+                    onClick={() => selfieInputRef.current?.click()}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          selfieUrl ? "bg-success/20" : "bg-muted"
+                        }`}>
+                          {selfieUrl ? (
+                            <CheckCircle2 className="h-5 w-5 text-success" />
+                          ) : (
+                            <Camera className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">Selfie Verification</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selfieFile ? selfieFile.name : "Take a photo holding your ID"}
+                          </p>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" disabled={verificationUploading}>
+                        {verificationUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Capture"}
+                      </Button>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">Upload</Button>
                 </div>
-              </div>
-            </div>
 
-            <div className="bg-muted rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">
-                  Your documents are securely stored and only used for verification purposes. 
-                  We never share your personal information with third parties.
-                </p>
-              </div>
-            </div>
+                <div className="bg-muted rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-muted-foreground">
+                      Your documents are securely stored and only used for verification purposes. 
+                      We never share your personal information with third parties.
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
         );
 
@@ -363,7 +564,7 @@ const SellCar = () => {
 
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="aspect-video bg-muted">
-                {images[0] && <img src={images[0]} alt="" className="w-full h-full object-cover" />}
+                {imagePreviews[0] && <img src={imagePreviews[0]} alt="" className="w-full h-full object-cover" />}
               </div>
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-2">
@@ -421,70 +622,84 @@ const SellCar = () => {
         <meta name="description" content="Sell your car to verified buyers in Nigeria. Create a listing, get verified, and connect with serious buyers." />
       </Helmet>
 
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-muted/30">
         <Navbar />
 
         <main className="pt-20 pb-12">
           <div className="container-wide py-8">
-            {/* Header */}
-            <div className="text-center mb-12">
-              <h1 className="text-3xl font-bold mb-2">Sell Your Car</h1>
-              <p className="text-muted-foreground">List your car to verified buyers across Nigeria</p>
-            </div>
-
-            {/* Steps Progress */}
-            <div className="max-w-3xl mx-auto mb-12">
+            {/* Progress Steps */}
+            <div className="max-w-3xl mx-auto mb-8">
               <div className="flex items-center justify-between">
                 {steps.map((step, index) => (
                   <div key={step.id} className="flex items-center">
                     <div className="flex flex-col items-center">
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
                           currentStep >= step.id
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {currentStep > step.id ? (
-                          <CheckCircle2 className="h-6 w-6" />
+                          <CheckCircle2 className="h-5 w-5" />
                         ) : (
                           <step.icon className="h-5 w-5" />
                         )}
                       </div>
-                      <span className={`text-sm mt-2 ${currentStep >= step.id ? "text-foreground" : "text-muted-foreground"}`}>
+                      <span className={`text-xs mt-2 ${
+                        currentStep >= step.id ? "text-primary" : "text-muted-foreground"
+                      }`}>
                         {step.title}
                       </span>
                     </div>
                     {index < steps.length - 1 && (
-                      <div className={`w-16 md:w-24 h-0.5 mx-2 ${currentStep > step.id ? "bg-primary" : "bg-muted"}`} />
+                      <div className={`w-full h-1 mx-4 hidden md:block ${
+                        currentStep > step.id ? "bg-primary" : "bg-muted"
+                      }`} style={{ width: "80px" }} />
                     )}
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Form */}
-            <div className="max-w-2xl mx-auto">
+            {/* Form Content */}
+            <div className="max-w-3xl mx-auto">
               <div className="bg-card rounded-xl border border-border p-6 md:p-8">
+                <h2 className="text-xl font-semibold mb-6">{steps[currentStep - 1].title}</h2>
+                
                 {renderStep()}
 
                 {/* Navigation */}
                 <div className="flex justify-between mt-8 pt-6 border-t border-border">
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
+                    onClick={() => setCurrentStep(currentStep - 1)}
                     disabled={currentStep === 1}
                   >
                     Back
                   </Button>
-                  
+
                   {currentStep < 4 ? (
-                    <Button onClick={() => setCurrentStep(Math.min(4, currentStep + 1))}>
-                      Continue <ChevronRight className="h-4 w-4 ml-2" />
+                    <Button onClick={handleNext} disabled={verificationUploading}>
+                      {currentStep === 3 && !isVerified && !isPending 
+                        ? "Submit Verification" 
+                        : "Continue"
+                      }
+                      <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   ) : (
-                    <Button variant="verification">
-                      Submit Listing <CheckCircle2 className="h-4 w-4 ml-2" />
+                    <Button 
+                      onClick={handleSubmit} 
+                      disabled={submitting || listingUploading}
+                    >
+                      {submitting || listingUploading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit Listing"
+                      )}
                     </Button>
                   )}
                 </div>
