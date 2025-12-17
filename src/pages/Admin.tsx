@@ -1,21 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Car, Shield, AlertTriangle, CheckCircle2, XCircle,
-  Eye, Search, Filter, Clock, TrendingUp, Activity,
-  ChevronRight, MoreHorizontal, Loader2
+  Eye, Search, Clock, Activity, Bell, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -24,10 +18,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import Logo from "@/components/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -44,14 +47,37 @@ interface VerificationWithProfile extends Verification {
   profiles?: Profile | null;
 }
 
+interface FraudAlert {
+  id: string;
+  listing_id: string | null;
+  alert_type: string;
+  severity: string;
+  message: string;
+  related_listing_id: string | null;
+  similarity_score: number | null;
+  status: string;
+  created_at: string;
+  listing?: CarListing | null;
+  related_listing?: CarListing | null;
+}
+
 const Admin = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
+  const { 
+    notifications, 
+    pendingListingsCount, 
+    pendingVerificationsCount, 
+    fraudAlertsCount,
+    totalPendingCount,
+    clearNotifications 
+  } = useAdminNotifications();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingListings, setPendingListings] = useState<ListingWithProfile[]>([]);
   const [pendingVerifications, setPendingVerifications] = useState<VerificationWithProfile[]>([]);
+  const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: string; type: "listing" | "verification" }>({
     open: false,
@@ -75,7 +101,7 @@ const Admin = () => {
 
   const fetchData = async () => {
     try {
-      const [listingsRes, verificationsRes] = await Promise.all([
+      const [listingsRes, verificationsRes, alertsRes] = await Promise.all([
         supabase
           .from("car_listings")
           .select("*")
@@ -83,6 +109,11 @@ const Admin = () => {
           .order("created_at", { ascending: false }),
         supabase
           .from("verifications")
+          .select("*")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("fraud_alerts")
           .select("*")
           .eq("status", "pending")
           .order("created_at", { ascending: false }),
@@ -122,6 +153,36 @@ const Admin = () => {
           profiles: profilesMap[v.user_id] || null,
         }))
       );
+
+      // Fetch related listings for fraud alerts
+      if (alertsRes.data && alertsRes.data.length > 0) {
+        const alertListingIds = alertsRes.data
+          .flatMap((a: any) => [a.listing_id, a.related_listing_id])
+          .filter(Boolean);
+
+        let alertListingsMap: Record<string, CarListing> = {};
+        if (alertListingIds.length > 0) {
+          const { data: alertListings } = await supabase
+            .from("car_listings")
+            .select("*")
+            .in("id", alertListingIds);
+          
+          alertListingsMap = (alertListings || []).reduce((acc, l) => {
+            acc[l.id] = l;
+            return acc;
+          }, {} as Record<string, CarListing>);
+        }
+
+        setFraudAlerts(
+          (alertsRes.data as FraudAlert[]).map((a) => ({
+            ...a,
+            listing: a.listing_id ? alertListingsMap[a.listing_id] : null,
+            related_listing: a.related_listing_id ? alertListingsMap[a.related_listing_id] : null,
+          }))
+        );
+      } else {
+        setFraudAlerts([]);
+      }
     } catch (error) {
       console.error("Error fetching admin data:", error);
       toast.error("Failed to load admin data");
@@ -239,15 +300,24 @@ const Admin = () => {
     }
   };
 
-  // Check for duplicate VINs (fraud detection)
-  const checkDuplicateVin = async (vin: string, currentListingId: string) => {
-    const { data } = await supabase
-      .from("car_listings")
-      .select("id, title")
-      .eq("vin", vin)
-      .neq("id", currentListingId);
-    
-    return data && data.length > 0 ? data : null;
+  const handleDismissAlert = async (alertId: string) => {
+    try {
+      const { error } = await supabase
+        .from("fraud_alerts")
+        .update({
+          status: "reviewed",
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", alertId);
+
+      if (error) throw error;
+      
+      toast.success("Alert dismissed");
+      setFraudAlerts(fraudAlerts.filter((a) => a.id !== alertId));
+    } catch (error: any) {
+      toast.error(error.message || "Failed to dismiss alert");
+    }
   };
 
   if (rolesLoading || loading) {
@@ -279,10 +349,10 @@ const Admin = () => {
           <nav className="space-y-2">
             {[
               { label: "Dashboard", icon: Activity, active: true },
-              { label: "Listings", icon: Car, badge: pendingListings.length },
-              { label: "Verifications", icon: Shield, badge: pendingVerifications.length },
+              { label: "Listings", icon: Car, badge: pendingListingsCount },
+              { label: "Verifications", icon: Shield, badge: pendingVerificationsCount },
               { label: "Users", icon: Users },
-              { label: "Fraud Alerts", icon: AlertTriangle },
+              { label: "Fraud Alerts", icon: AlertTriangle, badge: fraudAlertsCount },
             ].map((item) => (
               <button
                 key={item.label}
@@ -322,6 +392,70 @@ const Admin = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              
+              {/* Notifications Sheet */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {totalPendingCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground text-xs rounded-full flex items-center justify-center">
+                        {totalPendingCount > 99 ? "99+" : totalPendingCount}
+                      </span>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle className="flex items-center justify-between">
+                      Notifications
+                      {notifications.length > 0 && (
+                        <Button variant="ghost" size="sm" onClick={clearNotifications}>
+                          Clear all
+                        </Button>
+                      )}
+                    </SheetTitle>
+                  </SheetHeader>
+                  <ScrollArea className="h-[calc(100vh-100px)] mt-4">
+                    <AnimatePresence>
+                      {notifications.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No new notifications
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <motion.div
+                            key={notification.id}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className={`p-4 border-b border-border ${
+                              notification.type === "fraud" 
+                                ? "bg-destructive/5" 
+                                : notification.type === "verification" 
+                                ? "bg-primary/5" 
+                                : "bg-verification/5"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              {notification.type === "listing" && <Car className="h-5 w-5 text-verification" />}
+                              {notification.type === "verification" && <Shield className="h-5 w-5 text-primary" />}
+                              {notification.type === "fraud" && <AlertTriangle className="h-5 w-5 text-destructive" />}
+                              <div>
+                                <p className="font-medium text-sm">{notification.title}</p>
+                                <p className="text-xs text-muted-foreground">{notification.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {new Date(notification.timestamp).toLocaleTimeString()}
+                                </p>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </ScrollArea>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
 
@@ -330,8 +464,8 @@ const Admin = () => {
             {[
               { label: "Pending Listings", value: pendingListings.length.toString(), icon: Car, color: "text-verification" },
               { label: "Pending Verifications", value: pendingVerifications.length.toString(), icon: Shield, color: "text-primary" },
-              { label: "Active Users", value: "-", icon: Users, color: "text-success" },
-              { label: "Fraud Alerts", value: "0", icon: AlertTriangle, color: "text-destructive" },
+              { label: "Fraud Alerts", value: fraudAlerts.length.toString(), icon: AlertTriangle, color: "text-destructive" },
+              { label: "Total Pending", value: totalPendingCount.toString(), icon: Activity, color: "text-success" },
             ].map((stat) => (
               <motion.div
                 key={stat.label}
@@ -367,8 +501,13 @@ const Admin = () => {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="fraud">
-                Fraud Detection
+              <TabsTrigger value="fraud" className="relative">
+                Fraud Alerts
+                {fraudAlerts.length > 0 && (
+                  <span className="ml-2 bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5 rounded-full">
+                    {fraudAlerts.length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -535,43 +674,78 @@ const Admin = () => {
               )}
             </TabsContent>
 
-            {/* Fraud Detection */}
+            {/* Fraud Alerts */}
             <TabsContent value="fraud" className="space-y-4">
-              <div className="bg-card rounded-xl border border-border p-6">
-                <h3 className="font-semibold mb-4">Fraud Detection Features</h3>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-4 p-4 bg-muted rounded-lg">
-                    <AlertTriangle className="h-5 w-5 text-verification flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">VIN Uniqueness Check</p>
-                      <p className="text-sm text-muted-foreground">
-                        System automatically checks for duplicate VINs across all listings. 
-                        Duplicate VINs are flagged for review.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4 p-4 bg-muted rounded-lg">
-                    <Shield className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Seller Verification</p>
-                      <p className="text-sm text-muted-foreground">
-                        All sellers must verify their identity before listing. 
-                        Unverified sellers cannot post active listings.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4 p-4 bg-muted rounded-lg">
-                    <Eye className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">Admin Approval Required</p>
-                      <p className="text-sm text-muted-foreground">
-                        All listings require manual admin approval before going live. 
-                        This prevents fraudulent listings from appearing on the platform.
-                      </p>
-                    </div>
-                  </div>
+              {fraudAlerts.length === 0 ? (
+                <div className="bg-card rounded-xl border border-border p-12 text-center">
+                  <CheckCircle2 className="h-12 w-12 mx-auto text-success mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No fraud alerts</h3>
+                  <p className="text-muted-foreground">The system is monitoring for suspicious activity</p>
                 </div>
-              </div>
+              ) : (
+                fraudAlerts.map((alert) => (
+                  <motion.div
+                    key={alert.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`rounded-xl border p-6 ${
+                      alert.severity === "high"
+                        ? "bg-destructive/10 border-destructive/20"
+                        : "bg-verification/10 border-verification/20"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <AlertTriangle
+                        className={`h-6 w-6 flex-shrink-0 ${
+                          alert.severity === "high" ? "text-destructive" : "text-verification"
+                        }`}
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant={alert.severity === "high" ? "destructive" : "secondary"}>
+                            {alert.severity.toUpperCase()}
+                          </Badge>
+                          <Badge variant="outline" className="capitalize">
+                            {alert.alert_type.replace("_", " ")}
+                          </Badge>
+                          {alert.similarity_score && (
+                            <Badge variant="outline">
+                              {alert.similarity_score}% match
+                            </Badge>
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(alert.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="font-medium mb-2">{alert.message}</p>
+                        
+                        {alert.listing && (
+                          <p className="text-sm text-muted-foreground">
+                            Listing: <span className="text-foreground">{alert.listing.title}</span>
+                          </p>
+                        )}
+                        {alert.related_listing && (
+                          <p className="text-sm text-muted-foreground">
+                            Related to: <span className="text-foreground">{alert.related_listing.title}</span>
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Eye className="h-4 w-4 mr-1" /> Investigate
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => handleDismissAlert(alert.id)}
+                        >
+                          Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </TabsContent>
           </Tabs>
         </main>

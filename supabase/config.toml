@@ -1,1 +1,4 @@
 project_id = "roedgibzqxsvjloqvfnq"
+
+[functions.analyze-listing-images]
+verify_jwt = true
