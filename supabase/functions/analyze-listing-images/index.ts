@@ -160,12 +160,32 @@ serve(async (req) => {
     // Insert fraud alerts into database
     if (alerts.length > 0) {
       console.log(`Inserting ${alerts.length} fraud alerts`);
-      const { error: insertError } = await supabase
+      const { data: insertedAlerts, error: insertError } = await supabase
         .from('fraud_alerts')
-        .insert(alerts);
+        .insert(alerts)
+        .select();
 
       if (insertError) {
         console.error('Error inserting fraud alerts:', insertError);
+      }
+
+      // Send email notifications for high-severity alerts
+      const highSeverityAlerts = insertedAlerts?.filter(a => a.severity === 'high') || [];
+      for (const alert of highSeverityAlerts) {
+        try {
+          console.log(`Triggering email notification for high-severity alert: ${alert.id}`);
+          await supabase.functions.invoke('send-fraud-alert-email', {
+            body: {
+              alertId: alert.id,
+              alertType: alert.alert_type,
+              severity: alert.severity,
+              message: alert.message,
+              listingId: alert.listing_id,
+            },
+          });
+        } catch (emailError) {
+          console.error('Failed to send fraud alert email:', emailError);
+        }
       }
     }
 
