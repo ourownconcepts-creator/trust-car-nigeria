@@ -2,3 +2,6 @@ project_id = "roedgibzqxsvjloqvfnq"
 
 [functions.analyze-listing-images]
 verify_jwt = true
+
+[functions.send-fraud-alert-email]
+verify_jwt = true
