@@ -155,6 +155,20 @@ export const useMessages = () => {
     }
 
     try {
+      // Get sender profile for notification
+      const { data: senderProfile } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+
+      // Get listing title for notification
+      const { data: listing } = await supabase
+        .from("car_listings")
+        .select("title")
+        .eq("id", listingId)
+        .single();
+
       const { data, error } = await supabase
         .from("messages")
         .insert({
@@ -170,6 +184,18 @@ export const useMessages = () => {
 
       setMessages(prev => [...prev, data]);
       toast.success("Message sent!");
+
+      // Send email notification to recipient (fire and forget)
+      supabase.functions.invoke("send-message-notification", {
+        body: {
+          recipientId,
+          senderName: senderProfile?.full_name || senderProfile?.email || "A buyer",
+          listingTitle: listing?.title || "your listing",
+          messagePreview: content,
+          listingId,
+        },
+      }).catch((err) => console.error("Failed to send email notification:", err));
+
       return data;
     } catch (error: any) {
       console.error("Error sending message:", error);
