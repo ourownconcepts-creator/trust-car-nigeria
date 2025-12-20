@@ -16,9 +16,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import MessagesTab from "@/components/MessagesTab";
 import { useAuth } from "@/hooks/useAuth";
 import { useVerification } from "@/hooks/useVerification";
 import { useCarListings } from "@/hooks/useCarListings";
+import { useMessages } from "@/hooks/useMessages";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -29,6 +31,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { verification, isVerified, isPending, loading: verificationLoading } = useVerification();
   const { fetchUserListings, deleteListing, updateListing } = useCarListings();
+  const { unreadCount } = useMessages();
   
   const [listings, setListings] = useState<CarListing[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -209,6 +212,14 @@ const Dashboard = () => {
             <Tabs defaultValue="listings" className="space-y-6">
               <TabsList>
                 <TabsTrigger value="listings">My Listings</TabsTrigger>
+                <TabsTrigger value="messages" className="relative">
+                  Messages
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                      {unreadCount}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="profile">Profile</TabsTrigger>
               </TabsList>
 
@@ -296,6 +307,10 @@ const Dashboard = () => {
                     </motion.div>
                   ))
                 )}
+              </TabsContent>
+
+              <TabsContent value="messages">
+                <MessagesTab />
               </TabsContent>
 
               <TabsContent value="profile">
