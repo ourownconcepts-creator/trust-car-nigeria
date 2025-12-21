@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, ChevronLeft, Send, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { format } from "date-fns";
+import ReadReceipt from "@/components/ReadReceipt";
+import TypingIndicator from "@/components/TypingIndicator";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
   listing_id: string;
@@ -33,19 +38,59 @@ const MessagesTab = () => {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [userName, setUserName] = useState("User");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const conversationKey = selectedConversation 
+    ? `${selectedConversation.listing_id}-${selectedConversation.other_user_id}` 
+    : "";
+  
+  const { typingUsers, startTyping, stopTyping } = useTypingIndicator(conversationKey);
 
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single();
+      if (data) {
+        setUserName(data.full_name || data.email || "User");
+      }
+    };
+    fetchUserName();
+  }, [user]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSelectConversation = async (conv: Conversation) => {
     setSelectedConversation(conv);
     await fetchMessages(conv.listing_id, conv.other_user_id);
   };
 
+  const handleBack = () => {
+    stopTyping();
+    setSelectedConversation(null);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value);
+    if (e.target.value.trim()) {
+      startTyping(userName);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation || sending) return;
 
+    stopTyping();
     setSending(true);
     try {
       await sendMessage(
@@ -78,6 +123,11 @@ const MessagesTab = () => {
   if (!selectedConversation) {
     return (
       <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Messages</h2>
+          <PushNotificationToggle />
+        </div>
+        
         {conversations.length === 0 ? (
           <div className="bg-card rounded-xl border border-border p-12 text-center">
             <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -145,7 +195,7 @@ const MessagesTab = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setSelectedConversation(null)}
+          onClick={handleBack}
         >
           <ChevronLeft className="h-5 w-5" />
         </Button>
@@ -191,13 +241,14 @@ const MessagesTab = () => {
                     }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    <p
-                      className={`text-xs mt-1 ${
+                    <div
+                      className={`flex items-center justify-end gap-1 text-xs mt-1 ${
                         isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                       }`}
                     >
-                      {format(new Date(message.created_at), "h:mm a")}
-                    </p>
+                      <span>{format(new Date(message.created_at), "h:mm a")}</span>
+                      <ReadReceipt isRead={message.is_read || false} isOwn={isOwn} />
+                    </div>
                   </div>
                 </motion.div>
               );
@@ -209,6 +260,9 @@ const MessagesTab = () => {
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           )}
+
+          <TypingIndicator typingUsers={typingUsers} />
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
@@ -217,8 +271,9 @@ const MessagesTab = () => {
         <div className="flex gap-2">
           <Textarea
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyPress}
+            onBlur={() => stopTyping()}
             placeholder="Type a message..."
             className="min-h-[44px] max-h-[120px] resize-none"
             rows={1}
