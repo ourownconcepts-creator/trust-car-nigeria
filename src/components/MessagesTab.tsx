@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, ChevronLeft, Send, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useUserStatus } from "@/hooks/useUserStatus";
 import { format } from "date-fns";
 import ReadReceipt from "@/components/ReadReceipt";
 import TypingIndicator from "@/components/TypingIndicator";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
+import MessageReactions from "@/components/MessageReactions";
+import UserStatusIndicator from "@/components/UserStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -44,6 +47,12 @@ const MessagesTab = () => {
   const conversationKey = selectedConversation 
     ? `${selectedConversation.listing_id}-${selectedConversation.other_user_id}` 
     : "";
+  
+  // Get user IDs for status tracking
+  const userIds = useMemo(() => {
+    return selectedConversation ? [selectedConversation.other_user_id] : [];
+  }, [selectedConversation]);
+  const { getStatus } = useUserStatus(userIds);
   
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(conversationKey);
 
@@ -164,7 +173,9 @@ const MessagesTab = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="font-medium truncate">{conv.other_user_name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">{conv.other_user_name}</p>
+                    </div>
                     <span className="text-xs text-muted-foreground flex-shrink-0">
                       {format(new Date(conv.last_message_time), "MMM d")}
                     </span>
@@ -213,8 +224,23 @@ const MessagesTab = () => {
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium truncate">{selectedConversation.other_user_name}</p>
-          <p className="text-sm text-muted-foreground truncate">{selectedConversation.listing_title}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium truncate">{selectedConversation.other_user_name}</p>
+            <UserStatusIndicator 
+              isOnline={getStatus(selectedConversation.other_user_id).isOnline}
+              lastActive={getStatus(selectedConversation.other_user_id).lastActive}
+              size="sm"
+            />
+          </div>
+          <p className="text-sm text-muted-foreground truncate">
+            {selectedConversation.listing_title}
+            {!getStatus(selectedConversation.other_user_id).isOnline && 
+              getStatus(selectedConversation.other_user_id).lastActive && (
+              <span className="ml-2 text-xs">
+                • Last seen {format(getStatus(selectedConversation.other_user_id).lastActive!, "MMM d, h:mm a")}
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -231,24 +257,27 @@ const MessagesTab = () => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ delay: index * 0.02 }}
-                  className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                  className={`flex ${isOwn ? "justify-end" : "justify-start"} group`}
                 >
-                  <div
-                    className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                      isOwn
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  <div className="max-w-[75%]">
                     <div
-                      className={`flex items-center justify-end gap-1 text-xs mt-1 ${
-                        isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                      className={`rounded-2xl px-4 py-2 ${
+                        isOwn
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
                       }`}
                     >
-                      <span>{format(new Date(message.created_at), "h:mm a")}</span>
-                      <ReadReceipt isRead={message.is_read || false} isOwn={isOwn} />
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <div
+                        className={`flex items-center justify-end gap-1 text-xs mt-1 ${
+                          isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                        }`}
+                      >
+                        <span>{format(new Date(message.created_at), "h:mm a")}</span>
+                        <ReadReceipt isRead={message.is_read || false} isOwn={isOwn} />
+                      </div>
                     </div>
+                    <MessageReactions messageId={message.id} isOwn={isOwn} />
                   </div>
                 </motion.div>
               );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,12 @@ import {
 import { useMessages } from "@/hooks/useMessages";
 import { useAuth } from "@/hooks/useAuth";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useUserStatus } from "@/hooks/useUserStatus";
 import { formatDistanceToNow } from "date-fns";
 import ReadReceipt from "@/components/ReadReceipt";
 import TypingIndicator from "@/components/TypingIndicator";
+import MessageReactions from "@/components/MessageReactions";
+import UserStatusIndicator from "@/components/UserStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
 
 interface MessageDialogProps {
@@ -38,6 +41,10 @@ const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDi
   const { typingUsers, startTyping, stopTyping } = useTypingIndicator(
     isOpen ? conversationKey : ""
   );
+  
+  const userIds = useMemo(() => [sellerId], [sellerId]);
+  const { getStatus } = useUserStatus(userIds);
+  const sellerStatus = getStatus(sellerId);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -118,7 +125,15 @@ const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDi
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-lg">Message about {listingTitle}</DialogTitle>
+          <DialogTitle className="text-lg flex items-center gap-2">
+            Message about {listingTitle}
+            <UserStatusIndicator 
+              isOnline={sellerStatus.isOnline}
+              lastActive={sellerStatus.lastActive}
+              showText
+              size="sm"
+            />
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col h-[400px]">
@@ -143,24 +158,27 @@ const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDi
                       key={msg.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
+                      className={`flex ${isOwn ? "justify-end" : "justify-start"} group`}
                     >
-                      <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                          isOwn
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-background border border-border"
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                        <div className={`flex items-center justify-end gap-1 text-xs mt-1 ${
-                          isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
-                        }`}>
-                          <span>
-                            {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                          </span>
-                          <ReadReceipt isRead={msg.is_read || false} isOwn={isOwn} />
+                      <div className="max-w-[80%]">
+                        <div
+                          className={`rounded-lg px-4 py-2 ${
+                            isOwn
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-background border border-border"
+                          }`}
+                        >
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          <div className={`flex items-center justify-end gap-1 text-xs mt-1 ${
+                            isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+                          }`}>
+                            <span>
+                              {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                            </span>
+                            <ReadReceipt isRead={msg.is_read || false} isOwn={isOwn} />
+                          </div>
                         </div>
+                        <MessageReactions messageId={msg.id} isOwn={isOwn} />
                       </div>
                     </motion.div>
                   );
