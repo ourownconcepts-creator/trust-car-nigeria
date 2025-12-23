@@ -11,6 +11,7 @@ interface Message {
   content: string;
   is_read: boolean;
   created_at: string;
+  edited_at?: string | null;
   sender_profile?: {
     full_name: string | null;
     email: string;
@@ -204,6 +205,65 @@ export const useMessages = () => {
     }
   };
 
+  const editMessage = async (messageId: string, newContent: string) => {
+    if (!user) {
+      toast.error("You must be logged in to edit messages");
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .update({ 
+          content: newContent,
+          edited_at: new Date().toISOString()
+        })
+        .eq("id", messageId)
+        .eq("sender_id", user.id);
+
+      if (error) throw error;
+
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === messageId 
+            ? { ...msg, content: newContent, edited_at: new Date().toISOString() } 
+            : msg
+        )
+      );
+      toast.success("Message edited");
+      return true;
+    } catch (error: any) {
+      console.error("Error editing message:", error);
+      toast.error("Failed to edit message");
+      return false;
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to delete messages");
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", messageId)
+        .eq("sender_id", user.id);
+
+      if (error) throw error;
+
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      toast.success("Message deleted");
+      return true;
+    } catch (error: any) {
+      console.error("Error deleting message:", error);
+      toast.error("Failed to delete message");
+      return false;
+    }
+  };
+
   // Subscribe to realtime messages
   useEffect(() => {
     if (!user) return;
@@ -240,5 +300,7 @@ export const useMessages = () => {
     fetchConversations,
     fetchMessages,
     sendMessage,
+    editMessage,
+    deleteMessage,
   };
 };
