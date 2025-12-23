@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -19,6 +19,7 @@ import ReadReceipt from "@/components/ReadReceipt";
 import TypingIndicator from "@/components/TypingIndicator";
 import MessageReactions from "@/components/MessageReactions";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
+import MessageActions from "@/components/MessageActions";
 import { supabase } from "@/integrations/supabase/client";
 
 interface MessageDialogProps {
@@ -30,7 +31,7 @@ interface MessageDialogProps {
 
 const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDialogProps) => {
   const { user } = useAuth();
-  const { messages, fetchMessages, sendMessage, loading } = useMessages();
+  const { messages, fetchMessages, sendMessage, editMessage, deleteMessage, loading } = useMessages();
   const [isOpen, setIsOpen] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -153,6 +154,7 @@ const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDi
               <AnimatePresence>
                 {messages.map((msg) => {
                   const isOwn = msg.sender_id === user.id;
+                  const isEdited = !!(msg as any).edited_at;
                   return (
                     <motion.div
                       key={msg.id}
@@ -160,7 +162,7 @@ const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDi
                       animate={{ opacity: 1, y: 0 }}
                       className={`flex ${isOwn ? "justify-end" : "justify-start"} group`}
                     >
-                      <div className="max-w-[80%]">
+                      <div className="max-w-[80%] relative">
                         <div
                           className={`rounded-lg px-4 py-2 ${
                             isOwn
@@ -172,6 +174,12 @@ const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDi
                           <div className={`flex items-center justify-end gap-1 text-xs mt-1 ${
                             isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                           }`}>
+                            {isEdited && (
+                              <span className="flex items-center gap-0.5">
+                                <Pencil className="h-3 w-3" />
+                                edited
+                              </span>
+                            )}
                             <span>
                               {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
                             </span>
@@ -179,6 +187,13 @@ const MessageDialog = ({ listingId, sellerId, listingTitle, trigger }: MessageDi
                           </div>
                         </div>
                         <MessageReactions messageId={msg.id} isOwn={isOwn} />
+                        <MessageActions
+                          messageId={msg.id}
+                          content={msg.content}
+                          isOwn={isOwn}
+                          onEdit={editMessage}
+                          onDelete={deleteMessage}
+                        />
                       </div>
                     </motion.div>
                   );

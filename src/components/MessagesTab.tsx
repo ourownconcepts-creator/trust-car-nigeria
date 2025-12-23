@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, ChevronLeft, Send, Loader2, User } from "lucide-react";
+import { MessageCircle, ChevronLeft, Send, Loader2, User, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +14,8 @@ import TypingIndicator from "@/components/TypingIndicator";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import MessageReactions from "@/components/MessageReactions";
 import UserStatusIndicator from "@/components/UserStatusIndicator";
+import MessageSearch from "@/components/MessageSearch";
+import MessageActions from "@/components/MessageActions";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -35,7 +37,9 @@ const MessagesTab = () => {
     loading, 
     fetchConversations, 
     fetchMessages, 
-    sendMessage 
+    sendMessage,
+    editMessage,
+    deleteMessage
   } = useMessages();
   
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -132,10 +136,21 @@ const MessagesTab = () => {
   if (!selectedConversation) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Messages</h2>
           <PushNotificationToggle />
         </div>
+        
+        <MessageSearch 
+          onSelectResult={(listingId, otherUserId) => {
+            const conv = conversations.find(
+              c => c.listing_id === listingId && c.other_user_id === otherUserId
+            );
+            if (conv) {
+              handleSelectConversation(conv);
+            }
+          }}
+        />
         
         {conversations.length === 0 ? (
           <div className="bg-card rounded-xl border border-border p-12 text-center">
@@ -250,6 +265,7 @@ const MessagesTab = () => {
           <AnimatePresence>
             {messages.map((message, index) => {
               const isOwn = message.sender_id === user?.id;
+              const isEdited = !!(message as any).edited_at;
               return (
                 <motion.div
                   key={message.id}
@@ -259,7 +275,7 @@ const MessagesTab = () => {
                   transition={{ delay: index * 0.02 }}
                   className={`flex ${isOwn ? "justify-end" : "justify-start"} group`}
                 >
-                  <div className="max-w-[75%]">
+                  <div className="max-w-[75%] relative">
                     <div
                       className={`rounded-2xl px-4 py-2 ${
                         isOwn
@@ -273,11 +289,24 @@ const MessagesTab = () => {
                           isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
                         }`}
                       >
+                        {isEdited && (
+                          <span className="flex items-center gap-0.5">
+                            <Pencil className="h-3 w-3" />
+                            edited
+                          </span>
+                        )}
                         <span>{format(new Date(message.created_at), "h:mm a")}</span>
                         <ReadReceipt isRead={message.is_read || false} isOwn={isOwn} />
                       </div>
                     </div>
                     <MessageReactions messageId={message.id} isOwn={isOwn} />
+                    <MessageActions
+                      messageId={message.id}
+                      content={message.content}
+                      isOwn={isOwn}
+                      onEdit={editMessage}
+                      onDelete={deleteMessage}
+                    />
                   </div>
                 </motion.div>
               );
