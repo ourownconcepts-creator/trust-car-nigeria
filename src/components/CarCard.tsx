@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export interface CarCardProps {
-  id: number;
+  id: string | number;
   title: string;
   price: number;
   location: string;
