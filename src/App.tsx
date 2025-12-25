@@ -19,6 +19,15 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Cookies from "./pages/Cookies";
+import Dealers from "./pages/Dealers";
+import HowItWorks from "./pages/HowItWorks";
+import Valuation from "./pages/Valuation";
+import Careers from "./pages/Careers";
+import Press from "./pages/Press";
+import Help from "./pages/Help";
+import Safety from "./pages/Safety";
+import Report from "./pages/Report";
+import EscrowTerms from "./pages/EscrowTerms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -66,6 +75,15 @@ const App = () => (
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/cookies" element={<Cookies />} />
+              <Route path="/dealers" element={<Dealers />} />
+              <Route path="/how-it-works" element={<HowItWorks />} />
+              <Route path="/valuation" element={<Valuation />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/press" element={<Press />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/safety" element={<Safety />} />
+              <Route path="/report" element={<Report />} />
+              <Route path="/escrow-terms" element={<EscrowTerms />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

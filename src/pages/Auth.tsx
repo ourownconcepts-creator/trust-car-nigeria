@@ -359,7 +359,7 @@ const Auth = () => {
                     <div className="flex items-start gap-2 text-sm">
                       <input type="checkbox" className="rounded border-border mt-1" />
                       <span className="text-muted-foreground">
-                        I agree to the <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+                        I agree to the <a href="/terms" className="text-primary hover:underline">Terms of Service</a> and <a href="/privacy" className="text-primary hover:underline">Privacy Policy</a>
                       </span>
                     </div>
 
