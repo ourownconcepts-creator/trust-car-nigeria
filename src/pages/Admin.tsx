@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Users, Car, Shield, AlertTriangle, CheckCircle2, XCircle,
-  Eye, Search, Clock, Activity, Bell, Loader2
+  Eye, Search, Clock, Activity, Bell, Loader2, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,7 @@ import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import AdminContactMessages from "@/components/AdminContactMessages";
 
 type CarListing = Database["public"]["Tables"]["car_listings"]["Row"];
 type Verification = Database["public"]["Tables"]["verifications"]["Row"];
@@ -78,6 +79,7 @@ const Admin = () => {
   const [pendingListings, setPendingListings] = useState<ListingWithProfile[]>([]);
   const [pendingVerifications, setPendingVerifications] = useState<VerificationWithProfile[]>([]);
   const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>([]);
+  const [contactMessagesCount, setContactMessagesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: string; type: "listing" | "verification" }>({
     open: false,
@@ -101,7 +103,7 @@ const Admin = () => {
 
   const fetchData = async () => {
     try {
-      const [listingsRes, verificationsRes, alertsRes] = await Promise.all([
+      const [listingsRes, verificationsRes, alertsRes, contactRes] = await Promise.all([
         supabase
           .from("car_listings")
           .select("*")
@@ -117,10 +119,16 @@ const Admin = () => {
           .select("*")
           .eq("status", "pending")
           .order("created_at", { ascending: false }),
+        supabase
+          .from("contact_messages")
+          .select("id", { count: "exact" })
+          .eq("status", "unread"),
       ]);
 
       if (listingsRes.error) throw listingsRes.error;
       if (verificationsRes.error) throw verificationsRes.error;
+      
+      setContactMessagesCount(contactRes.count || 0);
 
       // Fetch profiles for listings
       const listingUserIds = listingsRes.data?.map((l) => l.user_id) || [];
@@ -351,6 +359,7 @@ const Admin = () => {
               { label: "Dashboard", icon: Activity, active: true },
               { label: "Listings", icon: Car, badge: pendingListingsCount },
               { label: "Verifications", icon: Shield, badge: pendingVerificationsCount },
+              { label: "Messages", icon: MessageSquare, badge: contactMessagesCount },
               { label: "Users", icon: Users },
               { label: "Fraud Alerts", icon: AlertTriangle, badge: fraudAlertsCount },
             ].map((item) => (
@@ -465,7 +474,8 @@ const Admin = () => {
               { label: "Pending Listings", value: pendingListings.length.toString(), icon: Car, color: "text-verification" },
               { label: "Pending Verifications", value: pendingVerifications.length.toString(), icon: Shield, color: "text-primary" },
               { label: "Fraud Alerts", value: fraudAlerts.length.toString(), icon: AlertTriangle, color: "text-destructive" },
-              { label: "Total Pending", value: totalPendingCount.toString(), icon: Activity, color: "text-success" },
+              { label: "Unread Messages", value: contactMessagesCount.toString(), icon: MessageSquare, color: "text-primary" },
+              { label: "Total Pending", value: (totalPendingCount + contactMessagesCount).toString(), icon: Activity, color: "text-success" },
             ].map((stat) => (
               <motion.div
                 key={stat.label}
@@ -506,6 +516,14 @@ const Admin = () => {
                 {fraudAlerts.length > 0 && (
                   <span className="ml-2 bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5 rounded-full">
                     {fraudAlerts.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="relative">
+                Contact Messages
+                {contactMessagesCount > 0 && (
+                  <span className="ml-2 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                    {contactMessagesCount}
                   </span>
                 )}
               </TabsTrigger>
@@ -746,6 +764,11 @@ const Admin = () => {
                   </motion.div>
                 ))
               )}
+            </TabsContent>
+
+            {/* Contact Messages */}
+            <TabsContent value="messages">
+              <AdminContactMessages />
             </TabsContent>
           </Tabs>
         </main>

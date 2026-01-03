@@ -74,6 +74,17 @@ const Contact = () => {
 
       if (error) throw error;
 
+      // Send email notification (fire and forget)
+      supabase.functions.invoke("send-contact-notification", {
+        body: {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim() || null,
+          subject: formData.subject,
+          message: formData.message.trim(),
+        },
+      }).catch(err => console.error("Email notification failed:", err));
+
       toast({
         title: "Message Sent",
         description: "We'll get back to you within 24 hours.",
