@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Phone, MapPin, Clock, Send, MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 
 const contactInfo = [
   {
@@ -41,6 +42,7 @@ const contactInfo = [
 
 const Contact = () => {
   const { toast } = useToast();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -104,10 +106,13 @@ const Contact = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Contact Us - List Your Car Nigeria</title>
-        <meta name="description" content="Get in touch with List Your Car. We're here to help with any questions about buying, selling, or listing your car." />
-      </Helmet>
+      <SEOHead
+        title="Contact Us - Get Support for Buying & Selling Cars"
+        description="Get in touch with List Your Car Nigeria. We're here to help with questions about buying, selling, or listing your car. Contact us via email, phone, or live chat."
+        keywords="contact List Your Car, car marketplace support Nigeria, sell car help Lagos, buy car assistance"
+        canonicalUrl="https://listyourcar.ng/contact"
+      />
+      <BreadcrumbSchema items={getBreadcrumbsFromPath(location.pathname)} />
 
       <div className="min-h-screen bg-background">
         <Navbar />
