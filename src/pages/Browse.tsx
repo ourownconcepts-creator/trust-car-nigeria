@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Search, SlidersHorizontal, Grid3X3, List, MapPin, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,12 +10,15 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CarCard from "@/components/CarCard";
 import { useCarListings } from "@/hooks/useCarListings";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
+import { useLocation } from "react-router-dom";
 
 const carMakes = ["Toyota", "Honda", "Mercedes-Benz", "BMW", "Lexus", "Ford", "Hyundai", "Kia", "Nissan", "Volkswagen"];
 const locations = ["Lagos", "Abuja", "Port Harcourt", "Ibadan", "Kano", "Enugu", "Benin City"];
 const yearRange = Array.from({ length: 25 }, (_, i) => (2024 - i).toString());
 
 const Browse = () => {
+  const location = useLocation();
   const { listings, loading } = useCarListings();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
@@ -187,10 +189,13 @@ const Browse = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Browse Verified Cars - AutoTrust Nigeria</title>
-        <meta name="description" content="Browse thousands of verified cars for sale in Nigeria. Filter by make, model, price, and location. Every listing is authentic." />
-      </Helmet>
+      <SEOHead
+        title="Browse Verified Cars for Sale in Nigeria"
+        description="Browse thousands of verified cars for sale in Nigeria. Filter by make, model, price, and location. Every listing is authentic with verified sellers."
+        keywords="buy cars Nigeria, used cars Lagos, verified cars for sale, Nigerian car dealers, affordable cars Nigeria"
+        canonicalUrl="https://listyourcar.ng/browse"
+      />
+      <BreadcrumbSchema items={getBreadcrumbsFromPath(location.pathname)} />
 
       <div className="min-h-screen bg-background">
         <Navbar />

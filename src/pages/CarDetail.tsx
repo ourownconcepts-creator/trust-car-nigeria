@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { 
   ChevronLeft, ChevronRight, Shield, CheckCircle2, MapPin, Calendar, 
   Gauge, Fuel, Settings2, Car, Phone, Heart, Share2, 
@@ -14,6 +13,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MessageDialog from "@/components/MessageDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { SEOHead, BreadcrumbSchema, ProductSchema } from "@/components/seo";
 
 interface CarListing {
   id: string;
@@ -45,6 +45,7 @@ interface SellerProfile {
 
 const CarDetail = () => {
   const { id } = useParams();
+  const location = useLocation();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [car, setCar] = useState<CarListing | null>(null);
@@ -132,12 +133,38 @@ const CarDetail = () => {
     ? car.images 
     : ["https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800"];
 
+  const breadcrumbItems = [
+    { name: "Home", path: "/" },
+    { name: "Browse Cars", path: "/browse" },
+    { name: car.make, path: `/browse?make=${car.make.toLowerCase()}` },
+    { name: car.title, path: location.pathname },
+  ];
+
   return (
     <>
-      <Helmet>
-        <title>{car.title} - List Your Car Nigeria</title>
-        <meta name="description" content={`${car.title} for sale in ${car.location}. ${car.mileage ? `${car.mileage.toLocaleString()} km` : ""}, ${car.transmission || ""}. Verified seller.`} />
-      </Helmet>
+      <SEOHead
+        title={`${car.title} for Sale in ${car.location}`}
+        description={`${car.year} ${car.make} ${car.model} for sale in ${car.location}. ${car.mileage ? `${car.mileage.toLocaleString()} km mileage` : ""}${car.transmission ? `, ${car.transmission} transmission` : ""}. Verified seller on List Your Car Nigeria.`}
+        keywords={`${car.make} ${car.model} for sale, ${car.year} ${car.make}, buy ${car.make} Nigeria, ${car.location} cars`}
+        canonicalUrl={`https://listyourcar.ng/car/${car.id}`}
+        ogType="product"
+      />
+      <ProductSchema
+        name={car.title}
+        description={car.description || `${car.year} ${car.make} ${car.model} for sale`}
+        image={images}
+        brand={car.make}
+        model={car.model}
+        year={car.year}
+        price={car.price}
+        url={`https://listyourcar.ng/car/${car.id}`}
+        sku={car.id}
+        mileage={car.mileage || undefined}
+        fuelType={car.fuel_type || undefined}
+        vehicleTransmission={car.transmission || undefined}
+        color={car.color || undefined}
+      />
+      <BreadcrumbSchema items={breadcrumbItems} showVisual={false} />
 
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -145,12 +172,12 @@ const CarDetail = () => {
         <main className="pt-20">
           {/* Breadcrumb */}
           <div className="container-wide py-4">
-            <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Link to="/browse" className="hover:text-primary">Cars</Link>
-              <span>/</span>
-              <Link to={`/browse?make=${car.make.toLowerCase()}`} className="hover:text-primary">{car.make}</Link>
-              <span>/</span>
-              <span className="text-foreground">{car.title}</span>
+            <nav className="flex items-center gap-2 text-sm text-muted-foreground" aria-label="Breadcrumb">
+              <Link to="/browse" className="hover:text-primary transition-colors">Cars</Link>
+              <span aria-hidden="true">/</span>
+              <Link to={`/browse?make=${car.make.toLowerCase()}`} className="hover:text-primary transition-colors">{car.make}</Link>
+              <span aria-hidden="true">/</span>
+              <span className="text-foreground" aria-current="page">{car.title}</span>
             </nav>
           </div>
 
