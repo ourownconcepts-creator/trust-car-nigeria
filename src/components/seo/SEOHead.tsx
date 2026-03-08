@@ -17,7 +17,7 @@ const SEOHead = ({
   keywords,
   canonicalUrl,
   ogType = "website",
-  ogImage = "https://listyourcar.ng/og-image.png",
+  ogImage = "/og-image.png",
   noIndex = false,
   structuredData,
 }: SEOHeadProps) => {

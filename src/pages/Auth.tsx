@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import { SEOHead } from "@/components/seo";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, Phone, Eye, EyeOff, Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -119,10 +119,11 @@ const Auth = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{mode === "login" ? "Login" : "Sign Up"} - List Your Car</title>
-        <meta name="description" content="Access Nigeria's trusted verified car marketplace. Login or create an account to buy or sell cars with confidence." />
-      </Helmet>
+      <SEOHead
+        title={mode === "login" ? "Login" : "Sign Up"}
+        description="Access Nigeria's trusted verified car marketplace. Login or create an account to buy or sell cars with confidence."
+        canonicalUrl="https://listyourcar.ng/auth"
+      />
 
       <div className="min-h-screen bg-gradient-to-b from-background to-secondary/30 flex">
         {/* Left Panel - Branding */}

@@ -1,5 +1,5 @@
-import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { useParams } from "react-router-dom";
 import { 
   Shield, MapPin, Phone, Mail, Clock, Star, 
@@ -41,10 +41,11 @@ const DealerProfile = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{mockDealer.name} - Verified Dealer | List Your Car</title>
-        <meta name="description" content={`${mockDealer.name} - ${mockDealer.description.slice(0, 150)}...`} />
-      </Helmet>
+      <SEOHead
+        title={`${mockDealer.name} - Verified Dealer`}
+        description={mockDealer.description.slice(0, 150)}
+        canonicalUrl={`https://listyourcar.ng/dealers/${mockDealer.id}`}
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />

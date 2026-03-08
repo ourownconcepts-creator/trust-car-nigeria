@@ -1,20 +1,23 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 
 const Privacy = () => {
   return (
     <>
-      <Helmet>
-        <title>Privacy Policy - AutoTrust Nigeria</title>
-        <meta name="description" content="Learn how AutoTrust Nigeria protects your personal information and data privacy." />
-      </Helmet>
+      <SEOHead
+        title="Privacy Policy"
+        description="Learn how List Your Car Nigeria protects your personal information and data privacy."
+        keywords="privacy policy, data protection nigeria, car marketplace privacy"
+        canonicalUrl="https://listyourcar.ng/privacy"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
           <div className="container-wide py-16">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/privacy")} />
             <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
             <p className="text-muted-foreground mb-8">Last updated: December 2024</p>
 

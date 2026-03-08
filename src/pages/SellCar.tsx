@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { motion } from "framer-motion";
 import { 
   Upload, Car, FileText, Shield, CheckCircle2, ChevronRight, 
@@ -617,16 +617,20 @@ const SellCar = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Sell Your Car - List Your Car Nigeria</title>
-        <meta name="description" content="Sell your car to verified buyers in Nigeria. Create a listing, get verified, and connect with serious buyers." />
-      </Helmet>
+      <SEOHead
+        title="Sell Your Car"
+        description="Sell your car to verified buyers in Nigeria. Create a listing, get verified, and connect with serious buyers."
+        keywords="sell car nigeria, list car for sale, sell my car online lagos"
+        canonicalUrl="https://listyourcar.ng/sell"
+        noIndex={true}
+      />
 
       <div className="min-h-screen bg-muted/30">
         <Navbar />
 
         <main className="pt-20 pb-12">
           <div className="container-wide py-8">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/sell")} />
             {/* Progress Steps */}
             <div className="max-w-3xl mx-auto mb-8">
               <div className="flex items-center justify-between">

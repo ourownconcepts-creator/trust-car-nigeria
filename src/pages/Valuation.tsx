@@ -1,6 +1,6 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,15 +24,20 @@ const Valuation = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Car Valuation - AutoTrust Nigeria</title>
-        <meta name="description" content="Get a free instant valuation for your car. Find out how much your vehicle is worth in the Nigerian market." />
-      </Helmet>
+      <SEOHead
+        title="Free Car Valuation"
+        description="Get a free instant valuation for your car. Find out how much your vehicle is worth in the Nigerian market."
+        keywords="car valuation nigeria, how much is my car worth, free car value estimate"
+        canonicalUrl="https://listyourcar.ng/valuation"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
+          <div className="container-wide">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/valuation")} />
+          </div>
           {/* Hero */}
           <section className="bg-gradient-to-b from-primary/5 to-background py-16">
             <div className="container-wide">

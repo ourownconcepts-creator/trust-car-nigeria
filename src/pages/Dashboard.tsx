@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import { SEOHead } from "@/components/seo";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { 
@@ -119,10 +119,11 @@ const Dashboard = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Dashboard - List Your Car</title>
-        <meta name="description" content="Manage your car listings, messages, and profile on List Your Car." />
-      </Helmet>
+      <SEOHead
+        title="Dashboard"
+        description="Manage your car listings, messages, and profile on List Your Car."
+        noIndex={true}
+      />
 
       <div className="min-h-screen bg-muted/30">
         <Navbar />

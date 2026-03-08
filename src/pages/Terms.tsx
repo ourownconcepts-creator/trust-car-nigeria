@@ -1,20 +1,23 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 
 const Terms = () => {
   return (
     <>
-      <Helmet>
-        <title>Terms of Service - AutoTrust Nigeria</title>
-        <meta name="description" content="Read the terms and conditions for using AutoTrust Nigeria's car marketplace platform." />
-      </Helmet>
+      <SEOHead
+        title="Terms of Service"
+        description="Read the terms and conditions for using List Your Car Nigeria's car marketplace platform."
+        keywords="terms of service, car marketplace terms, list your car terms"
+        canonicalUrl="https://listyourcar.ng/terms"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
           <div className="container-wide py-16">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/terms")} />
             <h1 className="text-4xl font-bold mb-8">Terms of Service</h1>
             <p className="text-muted-foreground mb-8">Last updated: December 2024</p>
 

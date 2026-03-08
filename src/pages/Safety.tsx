@@ -1,6 +1,6 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, AlertTriangle, CheckCircle, Eye, Lock, UserCheck, Phone, MapPin } from "lucide-react";
 
@@ -51,15 +51,20 @@ const Safety = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Safety Tips - AutoTrust Nigeria</title>
-        <meta name="description" content="Stay safe when buying or selling cars on AutoTrust Nigeria. Learn to identify scams and protect yourself." />
-      </Helmet>
+      <SEOHead
+        title="Safety Tips"
+        description="Stay safe when buying or selling cars on List Your Car. Learn to identify scams and protect yourself."
+        keywords="car buying safety, avoid car scams nigeria, safe car transactions"
+        canonicalUrl="https://listyourcar.ng/safety"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
+          <div className="container-wide">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/safety")} />
+          </div>
           {/* Hero */}
           <section className="bg-gradient-to-b from-primary/5 to-background py-16">
             <div className="container-wide text-center">

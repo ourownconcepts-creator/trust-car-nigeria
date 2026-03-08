@@ -1,6 +1,6 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, FAQSchema, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,15 +45,20 @@ const Help = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Help Center - AutoTrust Nigeria</title>
-        <meta name="description" content="Get help with buying, selling, and using AutoTrust Nigeria. Find answers to common questions and contact our support team." />
-      </Helmet>
+      <SEOHead
+        title="Help Center"
+        description="Get help with buying, selling, and using List Your Car. Find answers to common questions and contact our support team."
+        keywords="help center, car marketplace support, buying cars help, selling cars FAQ"
+        canonicalUrl="https://listyourcar.ng/help"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
+          <div className="container-wide">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/help")} />
+          </div>
           {/* Hero */}
           <section className="bg-gradient-to-b from-primary/5 to-background py-16">
             <div className="container-wide text-center">

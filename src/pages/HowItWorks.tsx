@@ -1,6 +1,6 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Shield, CreditCard, Car, CheckCircle, UserCheck, FileText, Handshake } from "lucide-react";
@@ -55,15 +55,20 @@ const HowItWorks = () => {
 
   return (
     <>
-      <Helmet>
-        <title>How It Works - AutoTrust Nigeria</title>
-        <meta name="description" content="Learn how AutoTrust Nigeria makes buying and selling cars safe and easy with verified sellers, escrow payments, and fraud protection." />
-      </Helmet>
+      <SEOHead
+        title="How It Works"
+        description="Learn how List Your Car makes buying and selling cars safe and easy with verified sellers, escrow payments, and fraud protection."
+        keywords="how to buy car nigeria, safe car selling, escrow car payment, verified car marketplace"
+        canonicalUrl="https://listyourcar.ng/how-it-works"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
+          <div className="container-wide">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/how-it-works")} />
+          </div>
           {/* Hero */}
           <section className="bg-gradient-to-b from-primary/5 to-background py-16">
             <div className="container-wide text-center">
