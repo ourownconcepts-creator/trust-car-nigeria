@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

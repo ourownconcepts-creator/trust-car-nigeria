@@ -1,8 +1,8 @@
-import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import { Shield, Users, Car, CheckCircle2, Target, Heart } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 
 const stats = [
   { value: "10,000+", label: "Verified Sellers" },

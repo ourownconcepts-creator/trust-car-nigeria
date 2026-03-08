@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
+import { SEOHead } from "@/components/seo";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, Phone, Eye, EyeOff, Building2, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

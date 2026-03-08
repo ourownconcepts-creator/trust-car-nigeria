@@ -1,5 +1,5 @@
-import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { useParams } from "react-router-dom";
 import { 
   Shield, MapPin, Phone, Mail, Clock, Star, 

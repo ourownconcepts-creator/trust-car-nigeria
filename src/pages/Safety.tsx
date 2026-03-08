@@ -1,6 +1,6 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, AlertTriangle, CheckCircle, Eye, Lock, UserCheck, Phone, MapPin } from "lucide-react";
 

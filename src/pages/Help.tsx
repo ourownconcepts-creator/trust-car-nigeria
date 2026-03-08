@@ -1,6 +1,6 @@
-import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SEOHead, FAQSchema, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

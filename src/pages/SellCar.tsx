@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/seo";
 import { motion } from "framer-motion";
 import { 
   Upload, Car, FileText, Shield, CheckCircle2, ChevronRight, 
