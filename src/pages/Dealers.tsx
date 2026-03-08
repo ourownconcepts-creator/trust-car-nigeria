@@ -115,6 +115,7 @@ const Dealers = () => {
         <main className="pt-20">
           <div className="container-wide py-16">
             <BreadcrumbSchema items={getBreadcrumbsFromPath("/dealers")} />
+            <div className="mb-8">
               <h1 className="text-4xl font-bold mb-4">Verified Sellers & Dealers</h1>
               <p className="text-muted-foreground text-lg">
                 Browse our network of active car sellers across Nigeria
