@@ -51,7 +51,7 @@ const Help = () => {
         keywords="help center, car marketplace support, buying cars help, selling cars FAQ"
         canonicalUrl="https://listyourcar.ng/help"
       />
-      <FAQSchema questions={faqs.map(f => ({ question: f.question, answer: f.answer }))} />
+      <FAQSchema faqs={faqs} />
 
       <div className="min-h-screen bg-background">
         <Navbar />
