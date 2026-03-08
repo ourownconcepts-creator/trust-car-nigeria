@@ -5,16 +5,19 @@ import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/
 const Cookies = () => {
   return (
     <>
-      <Helmet>
-        <title>Cookie Policy - AutoTrust Nigeria</title>
-        <meta name="description" content="Learn about how AutoTrust Nigeria uses cookies and similar technologies." />
-      </Helmet>
+      <SEOHead
+        title="Cookie Policy"
+        description="Learn about how List Your Car Nigeria uses cookies and similar technologies."
+        keywords="cookie policy, cookies car marketplace"
+        canonicalUrl="https://listyourcar.ng/cookies"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
           <div className="container-wide py-16">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/cookies")} />
             <h1 className="text-4xl font-bold mb-8">Cookie Policy</h1>
             <p className="text-muted-foreground mb-8">Last updated: December 2024</p>
 

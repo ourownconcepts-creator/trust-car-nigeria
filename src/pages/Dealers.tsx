@@ -102,17 +102,19 @@ const Dealers = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Dealer Profiles - AutoTrust Nigeria</title>
-        <meta name="description" content="Browse verified car dealers on AutoTrust Nigeria. Find trusted dealerships with quality vehicles and excellent service." />
-      </Helmet>
+      <SEOHead
+        title="Verified Car Dealers"
+        description="Browse verified car dealers on List Your Car Nigeria. Find trusted dealerships with quality vehicles and excellent service."
+        keywords="car dealers nigeria, verified dealerships, trusted car dealers lagos"
+        canonicalUrl="https://listyourcar.ng/dealers"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
           <div className="container-wide py-16">
-            <div className="mb-8">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/dealers")} />
               <h1 className="text-4xl font-bold mb-4">Verified Sellers & Dealers</h1>
               <p className="text-muted-foreground text-lg">
                 Browse our network of active car sellers across Nigeria

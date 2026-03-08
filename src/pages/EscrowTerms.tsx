@@ -5,16 +5,19 @@ import { SEOHead, BreadcrumbSchema, getBreadcrumbsFromPath } from "@/components/
 const EscrowTerms = () => {
   return (
     <>
-      <Helmet>
-        <title>Escrow Terms - AutoTrust Nigeria</title>
-        <meta name="description" content="Terms and conditions for using AutoTrust Nigeria's escrow payment service for vehicle transactions." />
-      </Helmet>
+      <SEOHead
+        title="Escrow Service Terms"
+        description="Terms and conditions for using List Your Car Nigeria's escrow payment service for vehicle transactions."
+        keywords="escrow terms, secure car payment nigeria, escrow service terms"
+        canonicalUrl="https://listyourcar.ng/escrow-terms"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
           <div className="container-wide py-16">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/escrow-terms")} />
             <h1 className="text-4xl font-bold mb-8">Escrow Service Terms</h1>
             <p className="text-muted-foreground mb-8">Last updated: December 2024</p>
 

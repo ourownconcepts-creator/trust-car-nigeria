@@ -41,10 +41,11 @@ const DealerProfile = () => {
 
   return (
     <>
-      <Helmet>
-        <title>{mockDealer.name} - Verified Dealer | List Your Car</title>
-        <meta name="description" content={`${mockDealer.name} - ${mockDealer.description.slice(0, 150)}...`} />
-      </Helmet>
+      <SEOHead
+        title={`${mockDealer.name} - Verified Dealer`}
+        description={mockDealer.description.slice(0, 150)}
+        canonicalUrl={`https://listyourcar.ng/dealers/${mockDealer.id}`}
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />

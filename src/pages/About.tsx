@@ -37,15 +37,20 @@ const values = [
 const About = () => {
   return (
     <>
-      <Helmet>
-        <title>About Us - List Your Car Nigeria</title>
-        <meta name="description" content="Learn about List Your Car - Nigeria's trusted verified car marketplace. Our mission is to make car buying and selling safe, simple, and transparent." />
-      </Helmet>
+      <SEOHead
+        title="About Us"
+        description="Learn about List Your Car - Nigeria's trusted verified car marketplace. Our mission is to make car buying and selling safe, simple, and transparent."
+        keywords="about list your car, nigeria car marketplace, verified car sellers, trusted auto marketplace"
+        canonicalUrl="https://listyourcar.ng/about"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
+          <div className="container-wide">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/about")} />
+          </div>
           {/* Hero */}
           <section className="py-20 bg-primary text-primary-foreground">
             <div className="container-wide">

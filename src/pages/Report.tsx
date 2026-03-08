@@ -37,15 +37,20 @@ const Report = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Report Fraud - AutoTrust Nigeria</title>
-        <meta name="description" content="Report suspicious listings, fraudulent activity, or safety concerns on AutoTrust Nigeria." />
-      </Helmet>
+      <SEOHead
+        title="Report Fraud"
+        description="Report suspicious listings, fraudulent activity, or safety concerns on List Your Car Nigeria."
+        keywords="report fraud, suspicious car listing, car scam report nigeria"
+        canonicalUrl="https://listyourcar.ng/report"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
+          <div className="container-wide">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/report")} />
+          </div>
           {/* Hero */}
           <section className="bg-gradient-to-b from-destructive/5 to-background py-16">
             <div className="container-wide text-center">

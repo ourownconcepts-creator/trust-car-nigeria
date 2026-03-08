@@ -32,15 +32,20 @@ const Press = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Press - AutoTrust Nigeria</title>
-        <meta name="description" content="Latest news, press releases, and media resources from AutoTrust Nigeria." />
-      </Helmet>
+      <SEOHead
+        title="Press & Media"
+        description="Latest news, press releases, and media resources from List Your Car Nigeria."
+        keywords="list your car press, nigeria car marketplace news, automotive press releases"
+        canonicalUrl="https://listyourcar.ng/press"
+      />
 
       <div className="min-h-screen bg-background">
         <Navbar />
 
         <main className="pt-20">
+          <div className="container-wide">
+            <BreadcrumbSchema items={getBreadcrumbsFromPath("/press")} />
+          </div>
           {/* Hero */}
           <section className="bg-gradient-to-b from-primary/5 to-background py-16">
             <div className="container-wide">
